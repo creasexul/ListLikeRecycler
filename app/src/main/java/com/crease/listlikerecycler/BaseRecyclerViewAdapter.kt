@@ -1,11 +1,11 @@
-package com.bammatrip.listlikerecycler
+package com.crease.listlikerecycler
 
 import android.databinding.DataBindingUtil
 import android.databinding.ViewDataBinding
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.bammatrip.listlikerecycler.BaseRecyclerViewAdapter.IItem
+import com.crease.listlikerecycler.BaseRecyclerViewAdapter.IItem
 
 /**
  * 采用[DataBindingUtil]的[RecyclerView.Adapter]
@@ -27,10 +27,9 @@ internal class BaseRecyclerViewAdapter : RecyclerView.Adapter<BaseRecyclerViewAd
 
     /** 添加[t]到[iItemList]的[position]位置*/
     fun <T : IItem> insertItem(position : Int, t : T) {
-        val realPosition = position
 
         iItemList.add(position, t)
-        notifyItemInserted(realPosition)
+        notifyItemInserted(position)
     }
 
     /** 添加[listOfT]到[iItemList]*/

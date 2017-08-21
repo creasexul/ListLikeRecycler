@@ -1,10 +1,10 @@
-package com.bammatrip.listlikerecyclerview.view
+package com.crease.listlikerecyclerview.view
 
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.TextView
-import com.bammatrip.listlikerecyclerview.R
+import com.crease.listlikerecyclerview.R
 
 public class SimpleFootLoadView @JvmOverloads constructor(context : Context?,
                                                           attrs : AttributeSet? = null,

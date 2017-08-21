@@ -1,11 +1,11 @@
-package com.bammatrip.listlikerecyclerview.view
+package com.crease.listlikerecyclerview.view
 
 import android.animation.ValueAnimator
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
-import com.bammatrip.listlikerecyclerview.R
+import com.crease.listlikerecyclerview.R
 
 public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                                                              attrs : AttributeSet? = null,
@@ -74,8 +74,6 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
 
     override fun move(offsetX : Float, offsetY : Float) {
 
-        Log.d("Head", "offsetX->$offsetX")
-
         val contentPaddingLeft : Int
         val contentPaddingRight : Int
         val contentPaddingTop : Int
@@ -95,6 +93,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingRight = 0
 
                 width = 0
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             offsetX == 0f -> {
@@ -104,6 +106,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingRight = this.parentPaddingRight
 
                 width = contentWidth
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             offsetX < contentWidth && offsetX > 0 -> {
@@ -115,6 +121,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingRight = (this.parentPaddingRight * ratio).toInt()
 
                 width = offsetX.toInt()
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             else -> {
@@ -139,6 +149,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingBottom = 0
 
                 height = 0
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             offsetY == 0f -> {
@@ -148,6 +162,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingBottom = this.parentPaddingBottom
 
                 height = contentHeight
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             offsetY > 0 && offsetY < contentHeight -> {
@@ -159,6 +177,10 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
                 parentPaddingBottom = (this.parentPaddingBottom * ratio).toInt()
 
                 height = offsetY.toInt()
+
+                if (currentState != STATE_NORMAL) {
+                    currentState = STATE_NORMAL
+                }
             }
 
             else -> {

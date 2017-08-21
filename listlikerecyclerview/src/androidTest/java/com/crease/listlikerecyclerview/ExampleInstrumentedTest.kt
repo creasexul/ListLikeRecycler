@@ -1,4 +1,4 @@
-package com.bammatrip.listlikerecycler
+package com.crease.listlikerecyclerview
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getTargetContext()
-        assertEquals("com.bammatrip.listlikerecycler", appContext.packageName)
+        assertEquals("com.bammatrip.listlikerecyclerview", appContext.packageName)
     }
 }

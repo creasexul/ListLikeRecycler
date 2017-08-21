@@ -1,4 +1,4 @@
-package com.bammatrip.listlikerecyclerview.view
+package com.crease.listlikerecyclerview.view
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -14,7 +14,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import com.bammatrip.listlikerecyclerview.R
+import com.crease.listlikerecyclerview.R
 
 
 /**
@@ -122,8 +122,8 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
 
     var headRefreshView : HeadRefreshView = SimpleHeadRefreshView(context)
         set(value) {
-            if (headIds.contains(field.layoutId)) {
-                val index = headIds.indexOf(field.layoutId)
+            val index = headIds.indexOf(field.layoutId)
+            if (index >= 0) {
                 headIds.removeAt(index)
                 headerViewList.remove(field.layoutId)
                 headIds.add(index, value.layoutId)
@@ -134,8 +134,8 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
 
     var footLoadView : FootLoadView = SimpleFootLoadView(context)
         set(value) {
-            if (footIds.contains(field.layoutId)) {
-                val index = footIds.indexOf(field.layoutId)
+            val index = footIds.indexOf(field.layoutId)
+            if (index >= 0) {
                 footIds.removeAt(index)
                 footerViewList.remove(field.layoutId)
                 footIds.add(index, value.layoutId)
@@ -267,39 +267,74 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
     /** ---------------------------------------- internal fun declare ---------------------------------------------*/
 
     fun addHeaderView(id : Int, headerView : View, position : Int = - 1) {
-        if (position < 0 || position > headIds.size) {
-            headIds.add(id)
-        } else {
-            val realPosition = position + (if (refreshEnabled) 1 else 0)
-            headIds.add(realPosition, id)
+
+        val isContain = headIds.contains(id)
+
+        if (isContain) {
+            headIds.remove(id)
+        }
+
+        val realPosition = if (position < 0) headIds.size else {
+            position + (if (refreshEnabled) 1 else 0)
         }
 
         headerViewList.put(id, headerView)
+        if (position < 0 || position > headIds.size) {
+            headIds.add(id)
+        } else {
+            headIds.add(realPosition, id)
+        }
+
+        //通过真正adapter刷新达到头部动态添加效果
+        if (isContain) {
+            maskAdapter?.adapter?.notifyDataSetChanged()
+        } else {
+            maskAdapter?.adapter?.notifyItemInserted(0)
+        }
     }
 
     fun addFooterView(id : Int, footerView : View, position : Int = - 1) {
+        val isContain = footIds.contains(id)
+
         val maxPosition = footIds.size - (if (loadingEnabled) 1 else 0) - 1
+
+        footerViewList.put(id, footerView)
+
         if (position < 0 || position > maxPosition) {
             footIds.add(maxPosition + 1, id)
         } else {
             footIds.add(position, id)
         }
 
-        footerViewList.put(id, footerView)
+        //通过真正adapter刷新达到头部动态添加效果
+        if (isContain) {
+            maskAdapter?.adapter?.notifyDataSetChanged()
+        } else {
+            maskAdapter?.adapter?.notifyItemInserted(maskAdapter !!.itemCount - footIds.size)
+        }
     }
 
     fun removeHeaderView(id : Int) {
         if (headIds.contains(id)) {
+
             headIds.remove(id)
             headerViewList.remove(id)
+
+            //通过真正adapter刷新达到头部动态删除效果
+            maskAdapter?.adapter?.notifyItemRemoved(0)
         }
     }
 
     fun removeFooterView(id : Int) {
         if (footIds.contains(id)) {
+
             footIds.remove(id)
             footerViewList.remove(id)
+
+            //通过真正adapter刷新达到尾部动态删除效果
+            maskAdapter?.adapter?.notifyItemRemoved(maskAdapter !!.itemCount - footIds.size)
         }
+
     }
 
     fun setOnItemClickListener(itemClickListener : OnItemClickListener) {

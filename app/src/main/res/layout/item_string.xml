@@ -7,7 +7,7 @@
 
         <variable
             name="string"
-            type="com.bammatrip.listlikerecycler.StringTest"/>
+            type="com.crease.listlikerecycler.StringTest"/>
     </data>
 
     <TextView

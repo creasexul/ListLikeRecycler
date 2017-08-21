@@ -1,4 +1,4 @@
-package com.bammatrip.listlikerecycler
+package com.crease.listlikerecycler
 
 import android.databinding.ViewDataBinding
 

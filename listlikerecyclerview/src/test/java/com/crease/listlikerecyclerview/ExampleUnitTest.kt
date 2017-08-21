@@ -1,4 +1,4 @@
-package com.bammatrip.listlikerecyclerview
+package com.crease.listlikerecyclerview
 
 import org.junit.Test
 

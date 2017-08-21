@@ -1,4 +1,4 @@
-package com.bammatrip.listlikerecyclerview.view
+package com.crease.listlikerecyclerview.view
 
 import android.content.Context
 import android.support.annotation.IntDef

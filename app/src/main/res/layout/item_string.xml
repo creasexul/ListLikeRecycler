@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
         <variable
             name="string"
-            type="com.crease.listlikerecycler.StringTest"/>
+            type="com.crease.listlikerecycler.StringTest" />
     </data>
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:padding="20dp"
         android:text="@{string.content}"
-        tools:text="asdasd"/>
+        tools:text="asdasd" />
 </layout>

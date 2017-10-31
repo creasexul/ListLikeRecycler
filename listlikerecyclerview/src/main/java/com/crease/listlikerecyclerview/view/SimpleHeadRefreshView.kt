@@ -5,39 +5,70 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import com.crease.listlikerecyclerview.R
 
-public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
-                                                             attrs : AttributeSet? = null,
-                                                             defStyleAttr : Int = 0,
-                                                             defStyleRes : Int = 0)
+public class SimpleHeadRefreshView @JvmOverloads constructor(context: Context?,
+                                                             attrs: AttributeSet? = null,
+                                                             defStyleAttr: Int = 0,
+                                                             defStyleRes: Int = 0)
     : HeadRefreshView(context, attrs, defStyleAttr, defStyleRes) {
 
     companion object {
         private const val ANIMATION_DURATION = 300L
     }
 
-    private var currentState : Long = STATE_NORMAL
-    private val contentPaddingLeft : Int
-    private val contentPaddingRight : Int
-    private val contentPaddingTop : Int
-    private val contentPaddingBottom : Int
-    private val parentPaddingLeft : Int
-    private val parentPaddingRight : Int
-    private val parentPaddingTop : Int
-    private val parentPaddingBottom : Int
-    private var contentHeight : Int = 0
-    private var contentWidth : Int = 0
+    private var currentState: Long = STATE_NORMAL
+        set(value) {
 
-    override val state : Long
+            when (value) {
+                STATE_NORMAL -> {
+                    textView.text = context.getString(R.string.wait_refresh)
+                    imageView.animate().rotation(0f)
+                }
+                STATE_RELEASE_TO_REFRESH -> {
+
+                    textView.text = context.getString(R.string.pre_refresh)
+                    imageView.animate().rotation(180f)
+                }
+                STATE_REFRESH -> {
+                    textView.text = context.getString(R.string.refreshing)
+                    imageView.animate().rotation(180f)
+                }
+                STATE_DONE -> {
+                    textView.text = context.getString(R.string.refresh_finished)
+                    imageView.animate().rotation(0f)
+                }
+            }
+            field = value
+        }
+
+    private val contentPaddingLeft: Int
+    private val contentPaddingRight: Int
+    private val contentPaddingTop: Int
+    private val contentPaddingBottom: Int
+    private val parentPaddingLeft: Int
+    private val parentPaddingRight: Int
+    private val parentPaddingTop: Int
+    private val parentPaddingBottom: Int
+    private var contentHeight: Int = 0
+    private var contentWidth: Int = 0
+
+    override val state: Long
         get() = currentState
 
-    private val contentView = LayoutInflater.from(context).inflate(R.layout.layout_recycler_head, this, true)
+    private val contentView: View = LayoutInflater.from(context).inflate(R.layout.layout_recycler_head, this,
+            true)
+    private val imageView = contentView.findViewById<ImageView>(R.id.iv_arrow)
+    private val textView = contentView.findViewById<TextView>(R.id.tv_content)
 
-    override val layoutId : Int
+    override val layoutId: Int
         get() = R.layout.layout_recycler_head
 
-    override val isPreLoading : Boolean
+    override val isPreLoading: Boolean
         get() = currentState == STATE_RELEASE_TO_REFRESH
 
     init {
@@ -56,7 +87,13 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
         contentPaddingTop = contentView.paddingTop
         contentPaddingBottom = contentView.paddingBottom
 
-        val layoutParams = contentView.layoutParams
+        var layoutParams = contentView.layoutParams
+        if (layoutParams == null) {
+            layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            contentView.layoutParams = layoutParams
+        }
+
         if (layoutParams is MarginLayoutParams) {
             parentPaddingLeft = layoutParams.leftMargin
             parentPaddingRight = layoutParams.rightMargin
@@ -72,18 +109,18 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
 
     }
 
-    override fun move(offsetX : Float, offsetY : Float) {
+    override fun move(offsetX: Float, offsetY: Float) {
 
-        val contentPaddingLeft : Int
-        val contentPaddingRight : Int
-        val contentPaddingTop : Int
-        val contentPaddingBottom : Int
-        val parentPaddingLeft : Int
-        val parentPaddingRight : Int
-        val parentPaddingTop : Int
-        val parentPaddingBottom : Int
-        val width : Int
-        val height : Int
+        val contentPaddingLeft: Int
+        val contentPaddingRight: Int
+        val contentPaddingTop: Int
+        val contentPaddingBottom: Int
+        val parentPaddingLeft: Int
+        val parentPaddingRight: Int
+        val parentPaddingTop: Int
+        val parentPaddingBottom: Int
+        val width: Int
+        val height: Int
 
         when {
             offsetX <= 0f && offsetY <= 0f -> {
@@ -205,7 +242,7 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
         contentView.layoutParams = layoutParams
     }
 
-    override fun setState(state : Long) {
+    override fun setState(state: Long) {
         currentState = state
 
         when (state) {
@@ -214,40 +251,46 @@ public class SimpleHeadRefreshView @JvmOverloads constructor(context : Context?,
         }
     }
 
-    private fun paramsChanged(ratio : Float) {
+    private fun paramsChanged(ratio: Float) {
+        post {
 
-        val currentRatio : Float
-        val layoutParams = contentView.layoutParams
-        currentRatio = if (layoutParams.height == contentHeight) {
-            layoutParams.width.toFloat() / contentWidth
-        } else {
-            layoutParams.height.toFloat() / contentHeight
+            val currentRatio: Float
+            val layoutParams = contentView.layoutParams
+            currentRatio = if (layoutParams.height == contentHeight) {
+                layoutParams.width.toFloat() / contentWidth
+            } else {
+                layoutParams.height.toFloat() / contentHeight
+            }
+
+            if (currentRatio == ratio) {
+                return@post
+            }
+
+            val valueAnimator = ValueAnimator.ofFloat(currentRatio, ratio)
+            valueAnimator.addUpdateListener {
+
+                val currentValue = it.animatedValue as Float
+                val contentPaddingLeft = (this.contentPaddingLeft * currentValue).toInt()
+                val contentPaddingRight = (this.contentPaddingRight * currentValue).toInt()
+                val contentPaddingTop = (this.contentPaddingTop * currentValue).toInt()
+                val contentPaddingBottom = (this.contentPaddingBottom * currentValue).toInt()
+                val parentPaddingLeft = (this.parentPaddingLeft * currentValue).toInt()
+                val parentPaddingRight = (this.parentPaddingRight * currentValue).toInt()
+                val parentPaddingTop = (this.parentPaddingTop * currentValue).toInt()
+                val parentPaddingBottom = (this.parentPaddingBottom * currentValue).toInt()
+                val width = (this.contentWidth * currentValue).toInt()
+                val height = (this.contentHeight * currentValue).toInt()
+
+                setPadding(parentPaddingLeft, parentPaddingTop, parentPaddingRight, parentPaddingBottom)
+                contentView.setPadding(contentPaddingLeft, contentPaddingTop, contentPaddingRight, contentPaddingBottom)
+                val contentLayoutParams = contentView.layoutParams
+                contentLayoutParams.height = height
+                contentLayoutParams.width = width
+                contentView.layoutParams = contentLayoutParams
+            }
+
+            valueAnimator.setDuration(ANIMATION_DURATION).start()
         }
-
-        val valueAnimator = ValueAnimator.ofFloat(currentRatio, ratio)
-        valueAnimator.addUpdateListener {
-
-            val currentValue = it.animatedValue as Float
-            val contentPaddingLeft = (this.contentPaddingLeft * currentValue).toInt()
-            val contentPaddingRight = (this.contentPaddingRight * currentValue).toInt()
-            val contentPaddingTop = (this.contentPaddingTop * currentValue).toInt()
-            val contentPaddingBottom = (this.contentPaddingBottom * currentValue).toInt()
-            val parentPaddingLeft = (this.parentPaddingLeft * currentValue).toInt()
-            val parentPaddingRight = (this.parentPaddingRight * currentValue).toInt()
-            val parentPaddingTop = (this.parentPaddingTop * currentValue).toInt()
-            val parentPaddingBottom = (this.parentPaddingBottom * currentValue).toInt()
-            val width = (this.width * currentValue).toInt()
-            val height = (this.height * currentValue).toInt()
-
-            setPadding(parentPaddingLeft, parentPaddingTop, parentPaddingRight, parentPaddingBottom)
-            contentView.setPadding(contentPaddingLeft, contentPaddingTop, contentPaddingRight, contentPaddingBottom)
-            val contentLayoutParams = contentView.layoutParams
-            contentLayoutParams.height = height
-            contentLayoutParams.width = width
-            contentView.layoutParams = contentLayoutParams
-        }
-
-        valueAnimator.setDuration(ANIMATION_DURATION).start()
 
     }
 }

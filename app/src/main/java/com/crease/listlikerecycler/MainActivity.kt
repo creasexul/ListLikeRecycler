@@ -12,7 +12,7 @@ import com.crease.listlikerecyclerview.view.ListLikeRecyclerView
 
 class MainActivity : AppCompatActivity() {
 
-    override fun onCreate(savedInstanceState : Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val mainBinding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
 
@@ -28,23 +28,45 @@ class MainActivity : AppCompatActivity() {
 
         mainBinding.recyclerView.adapter = adapter
         mainBinding.recyclerView.setOnItemClickListener(object : ListLikeRecyclerView.OnItemClickListener {
-            override fun onItemClick(childView : View, position : Int) {
-                Toast.makeText(this@MainActivity, position.toString(), Toast.LENGTH_LONG).show()
+            override fun onItemClick(childView: View, itemPosition: Int) {
+                Toast.makeText(this@MainActivity, itemPosition.toString(), Toast.LENGTH_LONG).show()
             }
 
-            override fun onItemLongClick(childView : View, position : Int) {
+            override fun onItemLongClick(childView: View, position: Int) {
 
             }
         })
 
+        mainBinding.recyclerView.loadCallback = object : ListLikeRecyclerView
+                                                         .OnRecyclerViewLoadCallback {
+            override fun onHeadRefresh() {
+                mainBinding.root.postDelayed({
+                    Toast.makeText(this@MainActivity, "Head refreshing finished", Toast
+                            .LENGTH_LONG).show()
+                    mainBinding.recyclerView.isRefreshing = false
+                }, 1000)
+            }
+
+            override fun onFootLoad() {
+                mainBinding.root.postDelayed({
+                    Toast.makeText(this@MainActivity, "Foot loading finished", Toast.LENGTH_LONG)
+                            .show()
+                    mainBinding.recyclerView.noMore = true
+                }, 1000)
+            }
+        }
+
         mainBinding.btnAdd.setOnClickListener {
-            mainBinding.recyclerView.addFooterView(R.layout.layout_head, LayoutInflater.from(this@MainActivity)
-                    .inflate(R.layout.layout_head, mainBinding.root as LinearLayout, false))
+            mainBinding.recyclerView.addHeaderView(R.layout.layout_head,
+                    LayoutInflater.from(this@MainActivity).inflate(R.layout.layout_head,
+                            mainBinding.root as LinearLayout, false))
         }
 
         mainBinding.btnRemove.setOnClickListener {
-            mainBinding.recyclerView.removeFooterView(R.layout.layout_head)
+            mainBinding.recyclerView.removeHeaderView(R.layout.layout_head)
         }
+
+        mainBinding.recyclerView.isRefreshing = true
 
     }
 

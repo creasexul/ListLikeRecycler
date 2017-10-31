@@ -1,0 +1,16 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Example user template template
+### Example user template
+
+# IntelliJ project files
+.idea
+*.iml
+.gitignore
+.gradle/
+.idea/
+app/app.iml
+app/build/
+build/
+listlikerecyclerview/build/
+listlikerecyclerview/listlikerecyclerview.iml
+local.properties

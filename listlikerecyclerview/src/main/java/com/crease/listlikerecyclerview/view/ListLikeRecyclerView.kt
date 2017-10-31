@@ -24,9 +24,9 @@ import com.crease.listlikerecyclerview.R
  * @author Crease
  * @version 1.0
  * */
-public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
-                                                            attrs : AttributeSet? = null,
-                                                            defStyle : Int = 0)
+public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
+                                                            attrs: AttributeSet? = null,
+                                                            defStyle: Int = 0)
     : RecyclerView(context, attrs, defStyle) {
 
     companion object {
@@ -42,14 +42,14 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
     private var lastY = 0f
 
     private var appBarState = AppBarStateChangeListener.EXPANDED
-    private var maskAdapter : ListLikeMaskAdapter<*>? = null
+    private var maskAdapter: ListLikeMaskAdapter<*>? = null
     private var headIds = mutableListOf<Int>()
     private var footIds = mutableListOf<Int>()
     private var headerViewList = SparseArray<View>()
     private var footerViewList = SparseArray<View>()
-    private var gestureDetector : GestureDetectorCompat? = null
+    private var gestureDetector: GestureDetectorCompat? = null
     private val itemTouchListener = object : SimpleOnItemTouchListener() {
-        override fun onInterceptTouchEvent(rv : RecyclerView?, e : MotionEvent?) : Boolean {
+        override fun onInterceptTouchEvent(rv: RecyclerView?, e: MotionEvent?): Boolean {
             gestureDetector?.onTouchEvent(e)
             return false
         }
@@ -61,6 +61,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             if (field != value) {
                 if (value) {
                     headRefreshView.setState(HeadRefreshView.Companion.STATE_REFRESH)
+                    loadCallback?.onHeadRefresh()
                 } else {
                     headRefreshView.setState(HeadRefreshView.Companion.STATE_DONE)
                 }
@@ -71,9 +72,13 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
     var isLoading = false
         set(value) {
             if (field != value) {
-                if (! value) {
+                if (! value && ! noMore) {
                     footLoadView.setState(FootLoadView.STATE_LOAD_FINISHED)
+                }else if (value){
+                    footLoadView.setState(FootLoadView.STATE_LOADING)
+                    loadCallback?.onFootLoad()
                 }
+
                 field = value
             }
         }
@@ -90,7 +95,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
         }
 
-    var emptyView : View? = null
+    var emptyView: View? = null
         set(value) {
             field = value
             dataObserver.onChanged()
@@ -114,13 +119,14 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             if (value) {
                 footIds.add(0, footLoadView.layoutId)
                 footerViewList.put(footLoadView.layoutId, footLoadView)
+                footLoadView.setState(FootLoadView.STATE_NO_MORE)
             } else {
                 footIds.remove(footLoadView.layoutId)
                 footerViewList.remove(footLoadView.layoutId)
             }
         }
 
-    var headRefreshView : HeadRefreshView = SimpleHeadRefreshView(context)
+    var headRefreshView: HeadRefreshView = SimpleHeadRefreshView(context)
         set(value) {
             val index = headIds.indexOf(field.layoutId)
             if (index >= 0) {
@@ -132,7 +138,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             field = value
         }
 
-    var footLoadView : FootLoadView = SimpleFootLoadView(context)
+    var footLoadView: FootLoadView = SimpleFootLoadView(context)
         set(value) {
             val index = footIds.indexOf(field.layoutId)
             if (index >= 0) {
@@ -144,7 +150,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             field = value
         }
 
-    var loadCallback : OnRecyclerViewLoadCallback? = null
+    var loadCallback: OnRecyclerViewLoadCallback? = null
 
     init {
 
@@ -160,7 +166,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
     }
 
     /** ---------------------------------------- override ---------------------------------------------*/
-    override fun setAdapter(adapter : Adapter<*>?) {
+    override fun setAdapter(adapter: Adapter<*>?) {
         maskAdapter = ListLikeMaskAdapter(adapter)
         super.setAdapter(maskAdapter)
 
@@ -168,16 +174,16 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
         dataObserver.onChanged()
     }
 
-    override fun getAdapter() : Adapter<*>? {
+    override fun getAdapter(): Adapter<*>? {
         return maskAdapter?.adapter
     }
 
-    override fun setLayoutManager(layout : LayoutManager) {
+    override fun setLayoutManager(layout: LayoutManager) {
         super.setLayoutManager(layout)
         if (layout is GridLayoutManager) {
             val gridLayoutManager = layoutManager as GridLayoutManager
             gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position : Int) : Int {
+                override fun getSpanSize(position: Int): Int {
                     return if (isInHead(position) || isInFoot(position)) {
                         gridLayoutManager.spanCount
                     } else {
@@ -188,10 +194,10 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
         }
     }
 
-    override fun onScrollStateChanged(state : Int) {
+    override fun onScrollStateChanged(state: Int) {
         super.onScrollStateChanged(state)
         if (state == RecyclerView.SCROLL_STATE_IDLE && null != loadCallback && loadingEnabled && ! isLoading) {
-            val lastPosition : Int
+            val lastPosition: Int
             lastPosition = when (layoutManager) {
                 is GridLayoutManager -> (layoutManager as GridLayoutManager).findLastVisibleItemPosition()
                 is StaggeredGridLayoutManager -> {
@@ -204,17 +210,15 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
 
             if (layoutManager.childCount > 0 && lastPosition >= layoutManager.itemCount && layoutManager.itemCount >
-                    layoutManager.childCount) {
+                    layoutManager.childCount && ! noMore) {
 
                 isLoading = true
-                footLoadView.setState(FootLoadView.STATE_LOADING)
-                loadCallback?.onFootLoad()
             }
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(e : MotionEvent) : Boolean {
+    override fun onTouchEvent(e: MotionEvent): Boolean {
 
         if (! isTop()) {
             return super.onTouchEvent(e)
@@ -253,7 +257,6 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             else -> {
                 lastY = - 1f
                 if (isTop() && refreshEnabled && appBarState == AppBarStateChangeListener.EXPANDED && headRefreshView.isPreLoading) {
-                    loadCallback?.onHeadRefresh()
                     isRefreshing = true
                 } else {
                     headRefreshView.setState(HeadRefreshView.Companion.STATE_NORMAL)
@@ -266,7 +269,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
 
     /** ---------------------------------------- internal fun declare ---------------------------------------------*/
 
-    fun addHeaderView(id : Int, headerView : View, position : Int = - 1) {
+    fun addHeaderView(id: Int, headerView: View, position: Int = - 1) {
 
         val isContain = headIds.contains(id)
 
@@ -293,7 +296,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
         }
     }
 
-    fun addFooterView(id : Int, footerView : View, position : Int = - 1) {
+    fun addFooterView(id: Int, footerView: View, position: Int = - 1) {
         val isContain = footIds.contains(id)
 
         val maxPosition = footIds.size - (if (loadingEnabled) 1 else 0) - 1
@@ -306,7 +309,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             footIds.add(position, id)
         }
 
-        //通过真正adapter刷新达到头部动态添加效果
+        //通过真正adapter刷新达到足部动态添加效果
         if (isContain) {
             maskAdapter?.adapter?.notifyDataSetChanged()
         } else {
@@ -314,7 +317,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
         }
     }
 
-    fun removeHeaderView(id : Int) {
+    fun removeHeaderView(id: Int) {
         if (headIds.contains(id)) {
 
             headIds.remove(id)
@@ -325,7 +328,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
         }
     }
 
-    fun removeFooterView(id : Int) {
+    fun removeFooterView(id: Int) {
         if (footIds.contains(id)) {
 
             footIds.remove(id)
@@ -337,38 +340,51 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
 
     }
 
-    fun setOnItemClickListener(itemClickListener : OnItemClickListener) {
+    fun setOnItemClickListener(itemClickListener: OnItemClickListener) {
         gestureDetector ?: let { addOnItemTouchListener(itemTouchListener) }
 
         gestureDetector = GestureDetectorCompat(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapUp(e : MotionEvent) : Boolean {
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
                 val childView = findChildViewUnder(e.x, e.y)
-                if (null != childView) {
-                    itemClickListener.onItemClick(childView, getChildLayoutPosition(childView) - headerViewList.size())
+                return if (null != childView) {
+                    val itemPosition = getChildLayoutPosition(childView)
+                    if (itemPosition in headerViewList.size() until (maskAdapter?.itemCount ?: 0)
+                            - footerViewList.size()) {
+                        itemClickListener.onItemClick(childView, getChildLayoutPosition(childView) - headerViewList.size())
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
                 }
-                return true
             }
 
-            override fun onLongPress(e : MotionEvent) {
+            override fun onLongPress(e: MotionEvent) {
                 val childView = findChildViewUnder(e.x, e.y)
                 if (null != childView) {
-                    itemClickListener.onItemLongClick(childView, getChildLayoutPosition(childView) - headerViewList.size())
+                    val itemPosition = getChildLayoutPosition(childView)
+                    if (itemPosition in headerViewList.size() until (maskAdapter?.itemCount ?: 0)
+                            - footerViewList.size()) {
+                        itemClickListener.onItemLongClick(childView, getChildLayoutPosition(childView) - headerViewList.size())
+                    }
                 }
 
             }
         })
     }
 
+
     /** ---------------------------------------- private fun declare ---------------------------------------------*/
-    private fun isTop() : Boolean {
+    private fun isTop(): Boolean {
         return headRefreshView.parent != null
     }
 
-    private fun isInHead(position : Int) : Boolean {
+    private fun isInHead(position: Int): Boolean {
         return position < headerViewList.size()
     }
 
-    private fun isInFoot(position : Int) : Boolean {
+    private fun isInFoot(position: Int): Boolean {
 
         val itemCount = (maskAdapter?.itemCount ?: 0) - footerViewList.size() - 1
         return position > itemCount
@@ -381,15 +397,15 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
      * 实现头布局和尾布局的显示以及将[ListLikeRecyclerView]中的主体交由真正[RecyclerView.Adapter]处理
      * */
     @Suppress("UNCHECKED_CAST")
-    private inner class ListLikeMaskAdapter<VH : ViewHolder>(val adapter : Adapter<VH>?)
+    private inner class ListLikeMaskAdapter<VH : ViewHolder>(val adapter: Adapter<VH>?)
         : RecyclerView.Adapter<ViewHolder>() {
 
-        override fun getItemCount() : Int {
+        override fun getItemCount(): Int {
             adapter?.let { return headerViewList.size() + adapter.itemCount + footerViewList.size() }
             return headerViewList.size() + footerViewList.size()
         }
 
-        override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : ViewHolder? {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder? {
             return when {
                 headIds.contains(viewType) -> SimpleViewHolder(headerViewList.get(viewType))
                 footIds.contains(viewType) -> SimpleViewHolder(footerViewList.get(viewType))
@@ -398,7 +414,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
         }
 
-        override fun onBindViewHolder(holder : ViewHolder?, position : Int) {
+        override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
             if (isInHead(position) || isInFoot(position)) {
                 return
             }
@@ -410,7 +426,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
         }
 
-        override fun onBindViewHolder(holder : ViewHolder?, position : Int, payloads : MutableList<Any>?) {
+        override fun onBindViewHolder(holder: ViewHolder?, position: Int, payloads: MutableList<Any>?) {
             if (isInHead(position) || isInFoot(position)) {
                 return
             }
@@ -428,12 +444,12 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
         }
 
-        override fun onAttachedToRecyclerView(recyclerView : RecyclerView?) {
+        override fun onAttachedToRecyclerView(recyclerView: RecyclerView?) {
             super.onAttachedToRecyclerView(recyclerView)
             if (layoutManager is GridLayoutManager) {
                 val gridLayoutManager = layoutManager as GridLayoutManager
                 gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                    override fun getSpanSize(position : Int) : Int {
+                    override fun getSpanSize(position: Int): Int {
                         return if (isInHead(position) || isInFoot(position)) {
                             gridLayoutManager.spanCount
                         } else {
@@ -446,15 +462,15 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             adapter?.onAttachedToRecyclerView(recyclerView)
         }
 
-        override fun onViewRecycled(holder : ViewHolder?) {
+        override fun onViewRecycled(holder: ViewHolder?) {
             adapter?.onViewRecycled(holder as VH)
         }
 
-        override fun onFailedToRecycleView(holder : ViewHolder?) : Boolean {
+        override fun onFailedToRecycleView(holder: ViewHolder?): Boolean {
             return adapter?.onFailedToRecycleView(holder as VH) ?: false
         }
 
-        override fun getItemId(position : Int) : Long {
+        override fun getItemId(position: Int): Long {
             if (null != adapter && ! isInHead(position) && ! isInFoot(position)) {
                 val realPosition = position - headerViewList.size()
                 return adapter.getItemId(realPosition)
@@ -463,23 +479,23 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             return - 1L
         }
 
-        override fun setHasStableIds(hasStableIds : Boolean) {
+        override fun setHasStableIds(hasStableIds: Boolean) {
             adapter?.setHasStableIds(hasStableIds)
         }
 
-        override fun unregisterAdapterDataObserver(observer : AdapterDataObserver?) {
+        override fun unregisterAdapterDataObserver(observer: AdapterDataObserver?) {
             adapter?.unregisterAdapterDataObserver(observer)
         }
 
-        override fun onViewDetachedFromWindow(holder : ViewHolder?) {
+        override fun onViewDetachedFromWindow(holder: ViewHolder?) {
             adapter?.onViewDetachedFromWindow(holder as VH)
         }
 
-        override fun onDetachedFromRecyclerView(recyclerView : RecyclerView?) {
+        override fun onDetachedFromRecyclerView(recyclerView: RecyclerView?) {
             adapter?.onDetachedFromRecyclerView(recyclerView)
         }
 
-        override fun getItemViewType(position : Int) : Int {
+        override fun getItemViewType(position: Int): Int {
             return when {
                 isInHead(position) -> headIds[position]
                 isInFoot(position) -> {
@@ -494,15 +510,15 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
             }
         }
 
-        override fun registerAdapterDataObserver(observer : AdapterDataObserver?) {
+        override fun registerAdapterDataObserver(observer: AdapterDataObserver?) {
             adapter?.registerAdapterDataObserver(observer)
         }
 
-        override fun onViewAttachedToWindow(holder : ViewHolder?) {
+        override fun onViewAttachedToWindow(holder: ViewHolder?) {
             adapter?.onViewAttachedToWindow(holder as VH)
         }
 
-        inner class SimpleViewHolder(view : View) : RecyclerView.ViewHolder(view)
+        inner class SimpleViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
     }
 
@@ -512,41 +528,56 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
      * 将[RecyclerView.Adapter]的刷新交给[ListLikeMaskAdapter]来处理
      * */
     inner class DataObserver : AdapterDataObserver() {
-        override fun onChanged() {
-            if (null != maskAdapter) {
-                maskAdapter?.notifyDataSetChanged()
 
-                emptyView?.let {
-                    val emptyCount = headerViewList.size() + footerViewList.size()
-                    if (maskAdapter?.itemCount == emptyCount) {
-                        emptyView?.visibility = View.VISIBLE
-                        this@ListLikeRecyclerView.visibility = View.GONE
-                    } else {
-                        emptyView?.visibility = View.GONE
-                        this@ListLikeRecyclerView.visibility = View.VISIBLE
-                    }
+        private fun checkIsEmpty() {
+            emptyView?.let {
+                val emptyCount = headerViewList.size() + footerViewList.size()
+                if (maskAdapter?.itemCount == emptyCount) {
+                    emptyView?.visibility = View.VISIBLE
+                    this@ListLikeRecyclerView.visibility = View.GONE
+                } else {
+                    emptyView?.visibility = View.GONE
+                    this@ListLikeRecyclerView.visibility = View.VISIBLE
                 }
             }
         }
 
-        override fun onItemRangeRemoved(positionStart : Int, itemCount : Int) {
+        override fun onChanged() {
+            if (null != maskAdapter) {
+                maskAdapter?.notifyDataSetChanged()
+
+                checkIsEmpty()
+            }
+        }
+
+        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
             maskAdapter?.notifyItemRangeRemoved(positionStart + headerViewList.size(), itemCount)
+
+            checkIsEmpty()
         }
 
-        override fun onItemRangeMoved(fromPosition : Int, toPosition : Int, itemCount : Int) {
+        override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
             maskAdapter?.notifyItemRangeRemoved(fromPosition + headerViewList.size(), itemCount)
+
+            checkIsEmpty()
         }
 
-        override fun onItemRangeInserted(positionStart : Int, itemCount : Int) {
+        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             maskAdapter?.notifyItemRangeInserted(positionStart + headerViewList.size(), itemCount)
+
+            checkIsEmpty()
         }
 
-        override fun onItemRangeChanged(positionStart : Int, itemCount : Int) {
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
             maskAdapter?.notifyItemRangeChanged(positionStart + headerViewList.size(), itemCount)
+
+            checkIsEmpty()
         }
 
-        override fun onItemRangeChanged(positionStart : Int, itemCount : Int, payload : Any?) {
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
             maskAdapter?.notifyItemRangeChanged(positionStart + headerViewList.size(), itemCount, payload)
+
+            checkIsEmpty()
         }
     }
 
@@ -568,11 +599,11 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
     /** [OnItemClickListener]的空实现类 */
     internal open class SimpleItemClickListener : OnItemClickListener {
         @CallSuper
-        override fun onItemClick(childView : View, position : Int) {
+        override fun onItemClick(childView: View, itemPosition: Int) {
         }
 
-        @CallSuper
-        override fun onItemLongClick(childView : View, position : Int) {
+        override fun onItemLongClick(childView: View, position: Int) {
+            onItemClick(childView, position)
         }
     }
 
@@ -588,9 +619,8 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context : Context,
 
     /** [ListLikeRecyclerView]点击事件*/
     public interface OnItemClickListener {
-        fun onItemClick(childView : View, position : Int)
+        fun onItemClick(childView: View, itemPosition: Int)
 
-        fun onItemLongClick(childView : View, position : Int)
+        fun onItemLongClick(childView: View, position: Int)
     }
-
 }

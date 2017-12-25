@@ -16,6 +16,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import com.crease.listlikerecyclerview.ListLikeRecyclerViewClient
 import com.crease.listlikerecyclerview.R
 
 
@@ -128,7 +129,8 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             }
         }
 
-    var headRefreshView: HeadRefreshView = SimpleHeadRefreshView(context)
+    var headRefreshView: HeadRefreshView = ListLikeRecyclerViewClient.headRefreshView ?:
+            SimpleHeadRefreshView(context)
         set(value) {
             val index = headIds.indexOf(field.layoutId)
             if (index >= 0) {
@@ -140,7 +142,8 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             field = value
         }
 
-    var footLoadView: FootLoadView = SimpleFootLoadView(context)
+    var footLoadView: FootLoadView = ListLikeRecyclerViewClient.footLoadView ?:
+            SimpleFootLoadView(context)
         set(value) {
             val index = footIds.indexOf(field.layoutId)
             if (index >= 0) {

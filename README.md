@@ -1,5 +1,5 @@
 # ListLikeRecycler
-Custom RecyclerView, based on [XRecyclerView](https://github.com/jianghejie/XRecyclerView) and writed with [Kotlin](https://github.com/JetBrains/kotlin)
+Custom RecyclerView writed with [Kotlin](https://github.com/JetBrains/kotlin)
 
 # Usage
 

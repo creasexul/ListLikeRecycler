@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.crease.listlikerecyclerview.view
 
 import android.annotation.SuppressLint
@@ -74,7 +76,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             if (field != value) {
                 if (! value && ! noMore) {
                     footLoadView.setState(FootLoadView.STATE_LOAD_FINISHED)
-                }else if (value){
+                } else if (value) {
                     footLoadView.setState(FootLoadView.STATE_LOADING)
                     loadCallback?.onFootLoad()
                 }
@@ -117,7 +119,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         set(value) {
             field = value
             if (value) {
-                footIds.add(0, footLoadView.layoutId)
+                footIds.add(footLoadView.layoutId)
                 footerViewList.put(footLoadView.layoutId, footLoadView)
                 footLoadView.setState(FootLoadView.STATE_NO_MORE)
             } else {
@@ -198,12 +200,12 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         super.onScrollStateChanged(state)
         if (state == RecyclerView.SCROLL_STATE_IDLE && null != loadCallback && loadingEnabled && ! isLoading) {
             val lastPosition: Int
+            val layoutManager = layoutManager
             lastPosition = when (layoutManager) {
-                is GridLayoutManager -> (layoutManager as GridLayoutManager).findLastVisibleItemPosition()
+                is GridLayoutManager -> layoutManager.findLastVisibleItemPosition()
                 is StaggeredGridLayoutManager -> {
-                    val staggeredManager = layoutManager as StaggeredGridLayoutManager
-                    val lastSpan = IntArray(staggeredManager.spanCount)
-                    staggeredManager.findLastVisibleItemPositions(lastSpan)
+                    val lastSpan = IntArray(layoutManager.spanCount)
+                    layoutManager.findLastVisibleItemPositions(lastSpan)
                     lastSpan.max() ?: 0
                 }
                 else -> (layoutManager as LinearLayoutManager).findLastVisibleItemPosition()
@@ -374,6 +376,25 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         })
     }
 
+    fun setOnItemTouchListener(itemTouchListener: OnItemTouchListener) {
+        gestureDetector ?: let { addOnItemTouchListener(this.itemTouchListener) }
+
+        gestureDetector = GestureDetectorCompat(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                val childView = findChildViewUnder(e.x, e.y)
+                if (null != childView) {
+                    itemTouchListener.onItemTouch(childView,
+                            getChildLayoutPosition(childView) - headerViewList.size(), e.x)
+                }
+                return true
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+
+            }
+        })
+    }
+
 
     /** ---------------------------------------- private fun declare ---------------------------------------------*/
     private fun isTop(): Boolean {
@@ -381,7 +402,7 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
     }
 
     private fun isInHead(position: Int): Boolean {
-        return position < headerViewList.size()
+        return position < headerViewList.size() && position >= 0
     }
 
     private fun isInFoot(position: Int): Boolean {
@@ -422,7 +443,10 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             holder?.let {
 
                 val realPosition = position - headerViewList.size()
-                adapter?.onBindViewHolder(holder as VH, realPosition)
+                adapter?.let {
+                    if (it.itemCount > realPosition)
+                        it.onBindViewHolder(holder as VH, realPosition)
+                }
             }
         }
 
@@ -431,10 +455,9 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
                 return
             }
 
-            holder?.let {
-
+            payloads?.let {
                 val realPosition = position - headerViewList.size()
-                payloads?.let {
+                if (adapter?.itemCount ?: 0 > realPosition) {
                     if (payloads.isEmpty()) {
                         adapter?.onBindViewHolder(holder as VH, realPosition)
                     } else {
@@ -446,12 +469,12 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
 
         override fun onAttachedToRecyclerView(recyclerView: RecyclerView?) {
             super.onAttachedToRecyclerView(recyclerView)
+            val layoutManager = layoutManager
             if (layoutManager is GridLayoutManager) {
-                val gridLayoutManager = layoutManager as GridLayoutManager
-                gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                     override fun getSpanSize(position: Int): Int {
                         return if (isInHead(position) || isInFoot(position)) {
-                            gridLayoutManager.spanCount
+                            layoutManager.spanCount
                         } else {
                             1
                         }
@@ -462,18 +485,29 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             adapter?.onAttachedToRecyclerView(recyclerView)
         }
 
+        override fun onDetachedFromRecyclerView(recyclerView: RecyclerView?) {
+            adapter?.onDetachedFromRecyclerView(recyclerView)
+        }
+
         override fun onViewRecycled(holder: ViewHolder?) {
-            adapter?.onViewRecycled(holder as VH)
+            holder?.let {
+                adapter?.onViewRecycled(it as VH)
+            }
         }
 
         override fun onFailedToRecycleView(holder: ViewHolder?): Boolean {
-            return adapter?.onFailedToRecycleView(holder as VH) ?: false
+            return if (null == holder)
+                false
+            else
+                adapter?.onFailedToRecycleView(holder as VH) ?: false
         }
 
         override fun getItemId(position: Int): Long {
             if (null != adapter && ! isInHead(position) && ! isInFoot(position)) {
                 val realPosition = position - headerViewList.size()
-                return adapter.getItemId(realPosition)
+                if (realPosition < adapter.itemCount) {
+                    return adapter.getItemId(realPosition)
+                }
             }
 
             return - 1L
@@ -483,16 +517,30 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             adapter?.setHasStableIds(hasStableIds)
         }
 
-        override fun unregisterAdapterDataObserver(observer: AdapterDataObserver?) {
-            adapter?.unregisterAdapterDataObserver(observer)
+        override fun onViewAttachedToWindow(holder: ViewHolder?) {
+            holder?.let {
+                val lp = holder.itemView.layoutParams
+                if (lp != null
+                        && lp is StaggeredGridLayoutManager.LayoutParams
+                        && (isInHead(holder.layoutPosition) || isInFoot(holder.layoutPosition))) {
+                    lp.isFullSpan = true
+                }
+                if (holder is ListLikeMaskAdapter<*>.SimpleViewHolder) {
+                    super.onViewAttachedToWindow(holder)
+                } else {
+                    adapter?.onViewAttachedToWindow(it as VH)
+                }
+            }
         }
 
         override fun onViewDetachedFromWindow(holder: ViewHolder?) {
-            adapter?.onViewDetachedFromWindow(holder as VH)
-        }
-
-        override fun onDetachedFromRecyclerView(recyclerView: RecyclerView?) {
-            adapter?.onDetachedFromRecyclerView(recyclerView)
+            holder?.let {
+                if (holder is ListLikeMaskAdapter<*>.SimpleViewHolder) {
+                    super.onViewDetachedFromWindow(holder)
+                } else {
+                    adapter?.onViewDetachedFromWindow(holder as VH)
+                }
+            }
         }
 
         override fun getItemViewType(position: Int): Int {
@@ -506,25 +554,16 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
                     footIds[realPosition]
                 }
                 null != adapter -> adapter.getItemViewType(position - headerViewList.size())
-                else -> - 1
+                else -> 0
             }
         }
 
-        override fun registerAdapterDataObserver(observer: AdapterDataObserver?) {
-            adapter?.registerAdapterDataObserver(observer)
-        }
-
-        override fun onViewAttachedToWindow(holder: ViewHolder?) {
-            adapter?.onViewAttachedToWindow(holder as VH)
-        }
-
         inner class SimpleViewHolder(view: View) : RecyclerView.ViewHolder(view)
-
     }
 
 
     /**
-     * [RecyclerView.Adapter]的[AdapterDataObserver],
+     * [RecyclerView.Adapter]的[RecyclerView.AdapterDataObserver],
      * 将[RecyclerView.Adapter]的刷新交给[ListLikeMaskAdapter]来处理
      * */
     inner class DataObserver : AdapterDataObserver() {
@@ -543,15 +582,14 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         }
 
         override fun onChanged() {
-            if (null != maskAdapter) {
-                maskAdapter?.notifyDataSetChanged()
+            maskAdapter?.notifyDataSetChanged()
 
-                checkIsEmpty()
-            }
+            checkIsEmpty()
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            maskAdapter?.notifyItemRangeRemoved(positionStart + headerViewList.size(), itemCount)
+            maskAdapter?.notifyItemRangeRemoved(positionStart + headerViewList.size(),
+                    itemCount)
 
             checkIsEmpty()
         }
@@ -622,5 +660,13 @@ public class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         fun onItemClick(childView: View, itemPosition: Int)
 
         fun onItemLongClick(childView: View, position: Int)
+    }
+
+    /**
+     * [ListLikeRecyclerView]touch事件
+     * 把具体事件交由item自身处理
+     * */
+    public interface OnItemTouchListener {
+        fun onItemTouch(childView: View, position: Int, offset: Float)
     }
 }

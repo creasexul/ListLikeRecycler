@@ -1,6 +1,7 @@
+@file:Suppress("unused")
+
 package com.crease.listlikerecyclerview
 
-import android.content.Context
 import com.crease.listlikerecyclerview.view.FootLoadView
 import com.crease.listlikerecyclerview.view.HeadRefreshView
 import com.crease.listlikerecyclerview.view.SimpleFootLoadView
@@ -8,20 +9,17 @@ import com.crease.listlikerecyclerview.view.SimpleHeadRefreshView
 
 object ListLikeRecyclerViewClient {
 
-    var headRefreshView: HeadRefreshView? = null
+    var headRefreshView: Class<out HeadRefreshView> = SimpleHeadRefreshView::class.java
         private set
 
-    var footLoadView: FootLoadView? = null
+    var footLoadView: Class<out FootLoadView> = SimpleFootLoadView::class.java
         private set
 
-    fun init(
-            context: Context,
-            headRefreshView: HeadRefreshView = SimpleHeadRefreshView(context),
-            footLoadView: FootLoadView = SimpleFootLoadView(context)
+    fun initHeaderAndFooter(
+            headRefreshView: Class<out HeadRefreshView> = SimpleHeadRefreshView::class.java,
+            footLoadView: Class<out FootLoadView> = SimpleFootLoadView::class.java
     ) {
-
         this.headRefreshView = headRefreshView
         this.footLoadView = footLoadView
-
     }
 }

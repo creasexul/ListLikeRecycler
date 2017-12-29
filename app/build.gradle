@@ -46,4 +46,7 @@ dependencies {
     kapt 'com.android.databinding:compiler:3.0.0'
     //kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+
+
+    compile 'com.jcodecraeer:xrecyclerview:1.5.2'
 }

@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.crease.listlikerecycler.BaseRecyclerViewAdapter.IItem
+import java.util.*
 
 /**
  * 采用[DataBindingUtil]的[RecyclerView.Adapter]
@@ -19,29 +20,43 @@ internal class BaseRecyclerViewAdapter : RecyclerView.Adapter<BaseRecyclerViewAd
     private val iItemList = mutableListOf<IItem>()
 
     /** 设置[listOfT]为数据源*/
-    fun <T : IItem> setItemList(listOfT : List<T>) {
+    fun <T : IItem> setItemList(listOfT: List<T>) {
         removeAll()
 
         insertItems(listOfT)
     }
 
     /** 添加[t]到[iItemList]的[position]位置*/
-    fun <T : IItem> insertItem(position : Int, t : T) {
+    fun <T : IItem> insertItem(position: Int, t: T) {
 
         iItemList.add(position, t)
         notifyItemInserted(position)
     }
 
     /** 添加[listOfT]到[iItemList]*/
-    fun <T : IItem> insertItems(listOfT : List<T>) {
+    fun <T : IItem> insertItems(listOfT: List<T>) {
         val startPosition = iItemList.size
 
         iItemList.addAll(listOfT)
         notifyItemRangeInserted(startPosition, listOfT.size)
     }
 
+    fun moveItem(fromPos: Int, toPos: Int) {
+        if (fromPos < toPos) {
+            for (i in fromPos until toPos) {
+                Collections.swap(iItemList, i, i + 1)
+            }
+        } else {
+            for (i in fromPos downTo (toPos + 1)) {
+                Collections.swap(iItemList, i, i - 1)
+            }
+        }
+
+        notifyItemMoved(fromPos, toPos)
+    }
+
     /** 从[iItemList]中移除[t] */
-    fun <T : IItem> removeItem(t : T) {
+    fun <T : IItem> removeItem(t: T) {
         val removePosition = iItemList.indexOf(t)
 
         iItemList.remove(t)
@@ -57,38 +72,38 @@ internal class BaseRecyclerViewAdapter : RecyclerView.Adapter<BaseRecyclerViewAd
     }
 
 
-    override fun getItemCount() : Int {
+    override fun getItemCount(): Int {
         return iItemList.size
     }
 
-    override fun onBindViewHolder(holder : ItemViewHolder, position : Int) {
+    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
         holder.bindTo(iItemList[position], position)
     }
 
-    override fun onCreateViewHolder(parent : ViewGroup, viewType : Int) : ItemViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         return ItemViewHolder.create(parent, viewType)
     }
 
-    override fun getItemViewType(position : Int) : Int {
+    override fun getItemViewType(position: Int): Int {
         return iItemList[position].viewType
     }
 
     internal interface IItem {
-        val variableId : Int
-        val viewType : Int
-        fun initBinding(viewDataBinding : ViewDataBinding, position : Int)
+        val variableId: Int
+        val viewType: Int
+        fun initBinding(viewDataBinding: ViewDataBinding, position: Int)
     }
 
-    class ItemViewHolder(val viewDataBinding : ViewDataBinding) : RecyclerView.ViewHolder(viewDataBinding.root) {
+    class ItemViewHolder(val viewDataBinding: ViewDataBinding) : RecyclerView.ViewHolder(viewDataBinding.root) {
         companion object {
-            fun create(parent : ViewGroup, viewType : Int) : ItemViewHolder {
+            fun create(parent: ViewGroup, viewType: Int): ItemViewHolder {
                 val viewBinding = DataBindingUtil.inflate<ViewDataBinding>(LayoutInflater.from(parent.context), viewType, parent,
                         false)
                 return ItemViewHolder(viewBinding)
             }
         }
 
-        fun bindTo(iItem : IItem, position : Int) {
+        fun bindTo(iItem: IItem, position: Int) {
             @Suppress("MISSING_DEPENDENCY_CLASS")
             viewDataBinding.setVariable(iItem.variableId, iItem)
             viewDataBinding.executePendingBindings()

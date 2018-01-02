@@ -3,6 +3,22 @@ Custom RecyclerView writed with [Kotlin](https://github.com/JetBrains/kotlin)
 
 # Usage
 
+## import
+
+``` Gradle
+// Project
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+// Module
+dependencies {
+        compile 'com.github.creasexul:ListLikeRecycler:1.0'
+}
+```
+
 ## init
 Just init it like a simple RecyclerView:
 ``` Kotlin

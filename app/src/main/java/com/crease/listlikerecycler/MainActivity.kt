@@ -107,6 +107,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun inRange(int: Int): Boolean = int in 0 .. 31
-
 }

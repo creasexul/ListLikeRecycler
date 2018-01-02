@@ -2,54 +2,85 @@
 
 package com.crease.listlikerecyclerview.touch
 
+import android.support.v4.view.GestureDetectorCompat
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
+import android.view.GestureDetector
+import android.view.MotionEvent
 import com.crease.listlikerecyclerview.view.ListLikeRecyclerView
 
 /**
  * ListItemTouchHelper
  *
+ * 当[ListLikeRecyclerView]的item被选中时，阻止[ListLikeRecyclerView.headRefreshView]获取滑动事件
+ *
  * @author Crease
  * @version 1.0
  */
-class ListItemTouchHelper : ItemTouchHelper.Callback() {
+class ListItemTouchHelper(
+        private val itemTouchCallback: ItemTouchCallback
+) : ItemTouchHelper(itemTouchCallback) {
 
-    var moveFlag: Int = ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.LEFT or
-            ItemTouchHelper.RIGHT
-    var dragFlag: Int = ItemTouchHelper.RIGHT
+    companion object {
+        private const val TAG = "ListItemTouchHelper"
+    }
 
-    override fun isLongPressDragEnabled(): Boolean = false
+    override fun attachToRecyclerView(recyclerView: RecyclerView?) {
+        super.attachToRecyclerView(recyclerView)
 
-    override fun isItemViewSwipeEnabled(): Boolean = true
-
-    override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
         if (recyclerView is ListLikeRecyclerView) {
-            val isHeaderOrFooter = recyclerView.isHeader(viewHolder.itemViewType)
-                    || recyclerView.isFooter(viewHolder.itemViewType)
+            itemTouchCallback.callback = object : ItemTouchCallback.RecyclerItemSelectedChangeCallback {
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val position = viewHolder.adapterPosition - recyclerView.headViewSize
+                    itemTouchCallback.onItemSwiped(viewHolder, position, direction)
+                }
 
-            if (isHeaderOrFooter) {
-                return makeMovementFlags(0, 0)
+                override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                    recyclerView.isInterruptTouchEvent = viewHolder != null
+                }
             }
+
+            val gestureDetector = GestureDetectorCompat(recyclerView.context,
+                    object : GestureDetector.SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            if (! recyclerView.preRefreshing) {
+
+                                val childView = recyclerView.findChildViewUnder(e.x, e.y)
+                                if (null != childView) {
+
+                                    startDrag(recyclerView.getChildViewHolder(childView))
+                                }
+                            }
+
+                        }
+                    })
+
+            recyclerView.addOnItemTouchListener(
+                    object : RecyclerView.SimpleOnItemTouchListener() {
+                        override fun onInterceptTouchEvent(rv: RecyclerView?, e: MotionEvent?): Boolean {
+                            return gestureDetector.onTouchEvent(e)
+                        }
+                    })
+        } else if (null != recyclerView) {
+
+            val gestureDetector = GestureDetectorCompat(recyclerView.context,
+                    object : GestureDetector.SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            val childView = recyclerView.findChildViewUnder(e.x, e.y)
+                            if (null != childView) {
+                                val itemPosition = recyclerView.getChildLayoutPosition(childView)
+
+                                startDrag(recyclerView.getChildViewHolder(recyclerView.getChildAt(itemPosition)))
+                            }
+                        }
+                    })
+
+            recyclerView.addOnItemTouchListener(
+                    object : RecyclerView.SimpleOnItemTouchListener() {
+                        override fun onInterceptTouchEvent(rv: RecyclerView?, e: MotionEvent?): Boolean {
+                            return gestureDetector.onTouchEvent(e)
+                        }
+                    })
         }
-
-        return makeMovementFlags(moveFlag, dragFlag)
-    }
-
-    override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-        return viewHolder.itemViewType == target.itemViewType
-    }
-
-    override fun onMoved(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, fromPos: Int, target: RecyclerView.ViewHolder, toPos: Int, x: Int, y: Int) {
-        super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y)
-
-        if (recyclerView is ListLikeRecyclerView){
-
-            val fromPos = viewHolder.adapterPosition - recyclerView.headViewSize
-            val toPos = target.adapterPosition - recyclerView.headViewSize
-        }
-    }
-
-    override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
-        //TODO remove this item
     }
 }

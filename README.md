@@ -84,6 +84,42 @@ recyclerView.removeHeaderView(id)
 recyclerView.removeFooterView(id)
 ```
 
+## drag/swipe item
+You can handle the drag or sliding events by using `ItemTouchCallback`
+``` Kotlin
+val callbackNew = object : ItemTouchCallback() {
+    override fun onItemSwiped(viewHolder: RecyclerView.ViewHolder, position: Int, direction: Int) {
+        stringList.removeAt(position)
+
+        adapter.removeItem(position)
+    }
+
+    override fun onItemCanMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder,
+                               position: Int, targetViewHolder: RecyclerView.ViewHolder,
+                               targetPosition: Int) = true
+
+    override fun onItemMoved(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, position: Int, targetViewHolder: RecyclerView.ViewHolder, targetPosition: Int, x: Int, y: Int) {
+        if (position < targetPosition) {
+            for (i in position until targetPosition) {
+                Collections.swap(stringList, i, i + 1)
+            }
+        } else {
+            for (i in position downTo (targetPosition + 1)) {
+                Collections.swap(stringList, i, i - 1)
+            }
+        }
+
+        adapter.moveItem(position, targetPosition)
+    }
+}
+
+val touchHelper = ListItemTouchHelper(callbackNew)
+touchHelper.attachToRecyclerView(mainBinding.recyclerView)
+```
+Please note that if you set long press events and drag events at the same time, you should set the long press events after drag events
+
+You can find more in [MainActivity.kt](https://github.com/creasexul/ListLikeRecycler/blob/master/app/src/main/java/com/crease/listlikerecycler/MainActivity.kt)
+
 # License
 
 >Copyright 2017 Crease

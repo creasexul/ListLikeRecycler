@@ -13,6 +13,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.StaggeredGridLayoutManager
 import android.util.AttributeSet
+import android.util.Log
 import android.util.SparseArray
 import android.view.*
 import com.crease.listlikerecyclerview.ListLikeRecyclerViewClient
@@ -414,7 +415,7 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
         gestureDetector = GestureDetectorCompat(context, object : GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapUp(e: MotionEvent): Boolean {
                 val childView = findChildViewUnder(e.x, e.y)
-                return if (! preRefreshing && null != childView) {
+                return if (! preRefreshing && null != childView && ! isInterruptTouchEvent) {
                     val itemPosition = getChildLayoutPosition(childView)
                     if (itemPosition in headerViewList.size() until (maskAdapter?.itemCount ?: 0)
                             - footerViewList.size()) {
@@ -430,7 +431,10 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
 
             override fun onLongPress(e: MotionEvent) {
                 val childView = findChildViewUnder(e.x, e.y)
-                if (! preRefreshing && null != childView) {
+                if (! preRefreshing && null != childView && ! isInterruptTouchEvent) {
+
+                    Log.d(TAG, "LongClick")
+
                     val itemPosition = getChildLayoutPosition(childView)
                     if (itemPosition in headerViewList.size() until (maskAdapter?.itemCount ?: 0)
                             - footerViewList.size()) {
@@ -649,6 +653,9 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
 
         override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
             for (i in 0 until itemCount) {
+
+                Log.d(TAG, "fromPosition=$fromPosition, toPosition=$toPosition, i=$i, " +
+                        "headerViewSize=$headViewSize")
 
                 maskAdapter?.notifyItemMoved(fromPosition + headerViewList.size() + i,
                         toPosition + headerViewList.size() + i)

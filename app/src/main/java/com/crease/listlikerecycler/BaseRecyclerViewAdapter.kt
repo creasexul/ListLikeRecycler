@@ -59,8 +59,12 @@ internal class BaseRecyclerViewAdapter : RecyclerView.Adapter<BaseRecyclerViewAd
     fun <T : IItem> removeItem(t: T) {
         val removePosition = iItemList.indexOf(t)
 
-        iItemList.remove(t)
-        notifyItemRemoved(removePosition)
+        removeItem(removePosition)
+    }
+
+    fun removeItem(pos: Int) {
+        iItemList.removeAt(pos)
+        notifyItemRemoved(pos)
     }
 
     /** 从[iItemList]中所有元素*/

@@ -4,6 +4,6 @@
     android:layout_height="wrap_content"
     android:gravity="center_horizontal"
     android:padding="16dp"
-    android:text="This is a Header 1">
+    android:text="This is a Header 2">
 
 </TextView>

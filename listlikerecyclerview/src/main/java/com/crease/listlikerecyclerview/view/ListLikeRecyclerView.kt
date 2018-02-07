@@ -123,9 +123,11 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
             if (value) {
                 headIds.add(0, headRefreshView.layoutId)
                 headerViewList.put(headRefreshView.layoutId, headRefreshView)
+                maskAdapter?.notifyItemInserted(0)
             } else {
                 headIds.remove(headRefreshView.layoutId)
                 headerViewList.remove(headRefreshView.layoutId)
+                maskAdapter?.notifyItemRemoved(0)
             }
         }
 
@@ -136,9 +138,11 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
                 footIds.add(footLoadView.layoutId)
                 footerViewList.put(footLoadView.layoutId, footLoadView)
                 footLoadView.setState(FootLoadView.STATE_NO_MORE)
+                maskAdapter?.let { it.notifyItemInserted(it.itemCount) }
             } else {
                 footIds.remove(footLoadView.layoutId)
                 footerViewList.remove(footLoadView.layoutId)
+                maskAdapter?.let { it.notifyItemRemoved(it.itemCount) }
             }
         }
 
@@ -636,6 +640,17 @@ class ListLikeRecyclerView @JvmOverloads constructor(context: Context,
                     this@ListLikeRecyclerView.visibility = View.VISIBLE
                 }
             }
+
+            // TODO improve this
+            // because if RecyclerView isn't full, FooterView will stay the refreshing state
+            postDelayed({
+                val layoutManager = layoutManager
+                if (layoutManager.itemCount > 0 && layoutManager.childCount >= layoutManager.itemCount
+                        && loadingEnabled) {
+                    isLoading = true
+                }
+            }, 32L)
+
         }
 
         override fun onChanged() {
